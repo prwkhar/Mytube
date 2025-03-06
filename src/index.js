@@ -1,7 +1,7 @@
-// require('dotenv').config()
 import dotenv from "dotenv" 
 import mongoose from "mongoose";
 import connectDb from "./db/index.js";
+import { app } from "./app.js";
 
 dotenv.config({
     path: './env'
@@ -15,19 +15,3 @@ connectDb().then(()=>{
 .catch((err)=>{
     console.log("MONGO db connection failed !!!",err);
 })
-
-
-
-
-
-
-
-
-// ;(async ()=>{
-//     try {
-//         await mongoose.connect(`${process.env.MONGO_URI}`)
-//     } catch (error) {
-//         console.log("error :",error);
-//         throw error;
-//     }
-// })()
