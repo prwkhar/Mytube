@@ -27,7 +27,7 @@ router.route("/refresh").post( refreshToken)
 
 router.route("/changepassword").post(verifyJWT,changepassword)
 
-router.route("/updateprofile").put(updateprofile)
+router.route("/updateprofile").put(verifyJWT,updateprofile)
 
 router.route("/updateavatar").put(
     verifyJWT,

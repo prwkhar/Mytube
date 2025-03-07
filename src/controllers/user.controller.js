@@ -92,8 +92,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   if (!username && !email) {
     throw new apiError(400, "Username or email is required");
-}
-
+  }
 
   const user = await User.findOne({
     $or: [{ username }, { email }],
@@ -103,7 +102,7 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new apiError(400, "user not exist");
   }
 
-  const ispassvalid = await user.isPasswordCorrect(password)
+  const ispassvalid = await user.isPasswordCorrect(password);
 
   if (!ispassvalid) {
     throw new apiError(401, "Invalid user credentials");
@@ -153,44 +152,56 @@ const logoutUser = asyncHandler(async (req, res) => {
       new: true,
     }
   );
-  const options={
+  const options = {
     httpOnly: true,
     secure: true,
-  }
+  };
 
   return res
-  .status(200)
-  .clearCookie("accessToken",options)
-  .clearCookie("refreshToken",options)
-  .json(new apiResponse(200,{},"User logged out successfully"))
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new apiResponse(200, {}, "User logged out successfully"));
 });
 
 const refreshToken = asyncHandler(async (req, res) => {
-  const incomingrefreshtoken = req.cookies.refreshToken||req.body.refreshToken;
-  if(!incomingrefreshtoken){
-    throw new apiError(401,"refresh token is required")
-    }
+  const incomingrefreshtoken =
+    req.cookies.refreshToken || req.body.refreshToken;
+  if (!incomingrefreshtoken) {
+    throw new apiError(401, "refresh token is required");
+  }
   try {
-    const decodedtoken = jwt.verify(incomingrefreshtoken,process.env.REFRESH_TOKEN_SECRET)
-    const user = await User.findById(decodedtoken?._id)
-    if(!user){
-      throw new apiError(401,"invalid refresh token")
+    const decodedtoken = jwt.verify(
+      incomingrefreshtoken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+    const user = await User.findById(decodedtoken?._id);
+    if (!user) {
+      throw new apiError(401, "invalid refresh token");
     }
-    if(incomingrefreshtoken!==user?.refreshToken){
-      throw new apiError(401,"refresh token is expired or used")
+    if (incomingrefreshtoken !== user?.refreshToken) {
+      throw new apiError(401, "refresh token is expired or used");
     }
-    const options={
+    const options = {
       httpOnly: true,
       secure: true,
-    }
-    const {accessToken,newrefreshToken} = await generateAccessandRefreshTokens(user._id)
+    };
+    const { accessToken, newrefreshToken } =
+      await generateAccessandRefreshTokens(user._id);
     return res
-    .status(200)
-    .cookie("accessToken",accessToken,options)
-    .cookie("refreshToken",newrefreshToken,options)
-    .json(new apiResponse(200,accessToken,newrefreshToken,"Token refreshed successfully"))
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", newrefreshToken, options)
+      .json(
+        new apiResponse(
+          200,
+          accessToken,
+          newrefreshToken,
+          "Token refreshed successfully"
+        )
+      );
   } catch (error) {
-    throw new apiError(401,error?.message||"invalid refresh token")
+    throw new apiError(401, error?.message || "invalid refresh token");
   }
 });
 
@@ -230,21 +241,35 @@ const updateprofile = asyncHandler(async (req, res) => {
   //return the response
   const user = req.user;
   const { fullName, email, username } = req.body;
-
-  if(!fullName&&!email&&!username){
-    throw new apiError(400,"atleast one field is required")
+  console.log(req.body);
+  console.log(req.user);
+  const userref = await User.findById(user._id);
+  if (!fullName && !email && !username) {
+    throw new apiError(400, "atleast one field is required");
   }
-  if(fullName){
-    user.fullName = fullName
+  if (fullName) {
+    userref.fullName = fullName;
+    await userref.save();
   }
-  if(email){
-    user.email = email
+  if (email) {
+    const userexist = await User.findOne({ email });
+    if (userexist) {
+      throw new apiError(400, "email already exist");
+    }
+    userref.email = email;r.findOne({ email })
+    await userref.save();
   }
-  if(username){
-    user.username = username
+  if (username) {
+    const userexist = await User.findOne({ username });
+    if (userexist) {
+      throw new apiError(400, "username already exist");
+    }
+    userref.username = username;
+    await userref.save();
   }
-  await user.save()
-  return res.status(200).json(new apiResponse(200,user,"profile updated successfully"))
+  return res
+    .status(200)
+    .json(new apiResponse(200, userref, "profile updated successfully"));
 });
 
 const updateavatar = asyncHandler(async (req, res) => {
@@ -259,13 +284,23 @@ const updateavatar = asyncHandler(async (req, res) => {
   if (!avatarlocalpath) {
     throw new apiError(400, "Avatar is required");
   }
-  if(user.avatar){
+  if (user.avatar) {
     const public_id = user.avatar.split("/").pop().split(".")[0];
     await cloudinary.uploader.destroy(public_id);
   }
   const avatar = await cloudinary_uploader(avatarlocalpath);
   user.avatar = avatar.url;
   await user.save();
-  return res.status(200).json(new apiResponse(200,user,"avatar updated successfully"))
+  return res
+    .status(200)
+    .json(new apiResponse(200, user, "avatar updated successfully"));
 });
-export { registerUser, loginUser, logoutUser,refreshToken,changepassword , updateprofile,updateavatar};
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshToken,
+  changepassword,
+  updateprofile,
+  updateavatar,
+};
