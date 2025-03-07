@@ -194,4 +194,76 @@ const refreshToken = asyncHandler(async (req, res) => {
   }
 });
 
-export { registerUser, loginUser, logoutUser,refreshToken };
+const changepassword = asyncHandler(async (req, res) => {
+  //get the user from the request
+  //get the old password and new password from the request
+  //check if the old password is correct
+  //change the password
+  //save the user
+  //return the response
+  const { oldpassword, newpassword } = req.body;
+  const user = req.user;
+
+  if (!oldpassword || !newpassword) {
+    throw new apiError(400, "old password and new password is required");
+  }
+
+  const ispassvalid = await user.isPasswordCorrect(oldpassword);
+
+  if (!ispassvalid) {
+    throw new apiError(401, "Invalid user credentials");
+  }
+
+  user.password = newpassword;
+  await user.save();
+
+  return res.status(200).json(new apiResponse(200, {}, "password changed"));
+});
+
+const updateprofile = asyncHandler(async (req, res) => {
+  //get the user from the request
+  //get the data from the request
+  //update the user
+  //save the user
+  //return the response
+  const user = req.user;
+  const { fullName, email, username } = req.body;
+
+  if(!fullName&&!email&&!username){
+    throw new apiError(400,"atleast one field is required")
+  }
+  if(fullName){
+    user.fullName = fullName
+  }
+  if(email){
+    user.email = email
+  }
+  if(username){
+    user.username = username
+  }
+  await user.save()
+  return res.status(200).json(new apiResponse(200,user,"profile updated successfully"))
+});
+
+const updateavatar = asyncHandler(async (req, res) => {
+  //get the user from the request
+  //get the avatar from the request
+  //upload the avatar to cloudinary
+  //update the user
+  //save the user
+  //return the response
+  const user = req.user;
+  const avatarlocalpath = req.files?.avatar[0]?.path;
+  if (!avatarlocalpath) {
+    throw new apiError(400, "Avatar is required");
+  }
+  if(user.avatar){
+    const public_id = user.avatar.split("/").pop().split(".")[0];
+    await cloudinary.uploader.destroy(public_id);
+  }
+  const avatar = await cloudinary_uploader(avatarlocalpath);
+  user.avatar = avatar.url;
+  await user.save();
+  return res.status(200).json(new apiResponse(200,user,"avatar updated successfully"))
+});
+export { registerUser, loginUser, logoutUser,refreshToken,changepassword , updateprofile,updateavatar};
