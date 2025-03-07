@@ -201,14 +201,16 @@ const changepassword = asyncHandler(async (req, res) => {
   //change the password
   //save the user
   //return the response
+  console.log(req.body);
   const { oldpassword, newpassword } = req.body;
+  console.log(req.user);
   const user = req.user;
-
+  const userref = await User.findById(user._id);
   if (!oldpassword || !newpassword) {
     throw new apiError(400, "old password and new password is required");
   }
-
-  const ispassvalid = await user.isPasswordCorrect(oldpassword);
+  console.log(oldpassword, newpassword);
+  const ispassvalid = await userref.isPasswordCorrect(oldpassword);
 
   if (!ispassvalid) {
     throw new apiError(401, "Invalid user credentials");
