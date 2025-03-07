@@ -279,21 +279,24 @@ const updateavatar = asyncHandler(async (req, res) => {
   //update the user
   //save the user
   //return the response
+  console.log("user->",req.user);
+  console.log("files->",req.files);
   const user = req.user;
+  const userref = await User.findById(user._id);
   const avatarlocalpath = req.files?.avatar[0]?.path;
   if (!avatarlocalpath) {
     throw new apiError(400, "Avatar is required");
   }
-  if (user.avatar) {
-    const public_id = user.avatar.split("/").pop().split(".")[0];
-    await cloudinary.uploader.destroy(public_id);
-  }
+  // if (userref.avatar) {
+  //   const public_id = userref.avatar.split("/").pop().split(".")[0];
+  //   await cloudinary_uploader.upload.destroy(public_id);
+  // }
   const avatar = await cloudinary_uploader(avatarlocalpath);
-  user.avatar = avatar.url;
-  await user.save();
+  userref.avatar = avatar.url;
+  await userref.save();
   return res
     .status(200)
-    .json(new apiResponse(200, user, "avatar updated successfully"));
+    .json(new apiResponse(200, userref, "avatar updated successfully"));
 });
 export {
   registerUser,
