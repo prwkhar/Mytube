@@ -21,3 +21,5 @@ const cloudinary_uploader = async (filepath) => {
         return null;
     }
 }
+
+export {cloudinary_uploader}
