@@ -8,8 +8,8 @@ import { upload } from "../middlewares/multer.midlewares.js";
 const generateAccessandRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
-    const generateToken = user.generateAccessToken();
-    const generaterefreshtoken = user.generateRefreshToken();
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
     return { accessToken, refreshToken };
@@ -85,33 +85,35 @@ const loginUser = asyncHandler(async (req, res) => {
   //password check
   //generate the tokens for the user
   //send cookie
+  console.log(req.body);
 
   const { email, username, password } = req.body;
 
-  if (!username || !email) {
-    throw new apiError(400, "username or password is required");
-  }
+  if (!username && !email) {
+    throw new apiError(400, "Username or email is required");
+}
 
-  const userref = User.findOne({
+
+  const user = await User.findOne({
     $or: [{ username }, { email }],
   });
 
-  if (!userref) {
-    throw apiError(400, "user not exist");
+  if (!user) {
+    throw new apiError(400, "user not exist");
   }
 
-  const ispassvalid = await userref.isPasswordCorrect(password);
+  const ispassvalid = await user.isPasswordCorrect(password)
 
   if (!ispassvalid) {
     throw new apiError(401, "Invalid user credentials");
   }
 
   const { accessToken, refreshToken } = await generateAccessandRefreshTokens(
-    userref._id
+    user._id
   );
 
   //sending to cookies
-  const loggedinuser = await User.findById(user._id).select(
+  const loggedinuser = await User.findById(User._id).select(
     "-password -refreshToken"
   );
 
