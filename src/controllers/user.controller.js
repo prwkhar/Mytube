@@ -5,6 +5,21 @@ import { cloudinary_uploader } from "../utils/cloudinary.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { upload } from "../middlewares/multer.midlewares.js";
 
+const generateAccessandRefreshTokens = async (userId)=>{
+    try {
+
+       const user =  await User.findById(userId);
+       const generateToken = user.generateAccessToken()
+       const generaterefreshtoken = user.generateRefreshToken();
+       user.refreshToken=refreshToken
+       await user.save({validateBeforeSave: false})
+       return {accessToken, refreshToken}
+
+    } catch (error) {
+        throw new apiError(500,"something went wrong while generating tokens")
+    }
+}
+
 const registerUser = asyncHandler(async (req, res) => {
   //get user data from frontend ✔️
   //validaton checks ✔️
@@ -66,4 +81,65 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, createduser, "user registered successfully"));
 });
 
-export { registerUser };
+const loginUser = asyncHandler(async (req,res)=>{
+    //get the username and password from the user
+    //check if user is present in out database
+    //password check
+    //generate the tokens for the user
+    //send cookie
+
+    const{email,username,password}=req.body
+
+    if(!username||!email){
+        throw new apiError(400,"username or password is required")
+    }
+
+    const userref = User.findOne({
+        $or: [{username},{email}]
+    })
+
+    if(!userref)
+    {
+        throw apiError(400,"user not exist");
+    }
+
+    const ispassvalid = await  userref.isPasswordCorrect(password)
+
+    if(!ispassvalid){
+        throw new apiError(401,"Invalid user credentials")
+    }
+
+    const {accessToken,refreshToken} =await generateAccessandRefreshTokens(userref._id)
+
+    //sending to cookies
+    const loggedinuser = await User.findById(user._id).select("-password -refreshToken")
+
+    //because of this its can only be modified from server
+    const options={
+        httpOnly: true,
+        secure: true,
+    }
+
+    return res
+    .status(200)
+    .cookie("accessToken",accessToken,options)
+    .cookie("refreshToken",refreshToken,options)
+    .json(
+        new apiResponse(200,
+            {
+                user: loggedinuser,accessToken,refreshToken
+            },
+            "user logged in successfully"
+        )
+    )
+
+});
+
+const logoutUser = asyncHandler(async(req,res)=>{
+
+});
+
+export {
+     registerUser,
+     loginUser
+};
